@@ -1,3 +1,7 @@
+.PHONY: parcel
+parcel:
+	parcel serve src/parcel/index.html
+
 src = src
 ifndef dest
 	dest = dist
