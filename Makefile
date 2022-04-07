@@ -116,15 +116,30 @@ $(langJS): $(dest)/lang/%: $(src)/lang/%
 	@echo $@
 	@$(compile) $< --js_output_file $@
 
+.PHONY: $(dest)/cache.manifest
 $(dest)/cache.manifest: $(cache)
 	@echo $@
-	@sed -i '$$d' $@
-	@echo -n \# MD5= >> $@
-	@cat $(cache) | md5sum | awk '{print $$1}' >> $@
+	@gsed -i '$$d' $@ # `gsed` for macOS in-place compat
+	@/usr/bin/env echo -n \# MD5= >> $@
+	@cat $(cache) | openssl dgst -md5 | awk '{print $$1}' >> $@
 
 $(dest)/sw.js: $(cache)
 	@echo $@
-	@sed -i '$$d' $@
-	@echo 'var CACHE_NAME = "cstimer_cache_'`cat $(cache) | md5sum | awk '{print $$1}'`'";' >> $@
+	@gsed -i '$$d' $@ # `gsed` for macOS in-place compat
+	@/usr/bin/env echo 'var CACHE_NAME = "cstimer_cache_'`cat $(cache) | openssl dgst -md5 | awk '{print $$1}'`'";' >> $@
 
 .PHONY: all
+
+DEPLOY_DOMAIN    = cstimer.cubing.net
+DEPLOY_SFTP_PATH = cubing_cstimer@towns.dreamhost.com:~/${DEPLOY_DOMAIN}/
+DEPLOY_URL       = https://${DEPLOY_DOMAIN}/
+
+.PHONY: deploy
+deploy: all
+	rsync -avz \
+		--exclude .DS_Store \
+		--exclude .git \
+		./dist/ \
+		${DEPLOY_SFTP_PATH}
+	echo "\nDone deploying. Go to ${DEPLOY_URL}\n"
+
